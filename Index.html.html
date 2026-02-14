@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Math.Id</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+*{box-sizing:border-box;font-family:"Comic Sans MS","Poppins",sans-serif}
+
+body{
+margin:0;
+min-height:100vh;
+background:linear-gradient(135deg,#ffb6d5,#bfa8ff);
+display:flex;
+justify-content:center;
+align-items:center;
+color:#fff;
+}
+
+.container{
+width:95%;
+max-width:520px;
+background:rgba(255,255,255,0.2);
+border-radius:25px;
+padding:25px;
+text-align:center;
+box-shadow:0 15px 40px rgba(0,0,0,0.3);
+}
+
+.hidden{display:none}
+
+button{
+padding:14px 26px;
+border:none;
+border-radius:25px;
+font-size:18px;
+font-weight:bold;
+cursor:pointer;
+background:#fff;
+color:#7a55c1;
+margin-top:15px;
+}
+
+input{
+width:80%;
+padding:12px;
+border-radius:15px;
+border:none;
+font-size:18px;
+margin:15px 0;
+}
+
+.story{
+background:rgba(255,255,255,0.25);
+padding:12px;
+border-radius:15px;
+margin-bottom:15px;
+font-size:17px;
+}
+
+.equation{
+font-size:34px;
+font-weight:bold;
+display:flex;
+justify-content:center;
+gap:10px;
+margin-bottom:20px;
+}
+
+.drop{
+min-width:70px;
+min-height:55px;
+border:3px dashed #fff;
+border-radius:15px;
+display:flex;
+justify-content:center;
+align-items:center;
+}
+
+.options{
+display:flex;
+justify-content:center;
+gap:15px;
+flex-wrap:wrap;
+}
+
+.option{
+width:60px;
+height:60px;
+background:#fff;
+color:#7a55c1;
+border-radius:50%;
+display:flex;
+justify-content:center;
+align-items:center;
+font-size:22px;
+font-weight:bold;
+cursor:pointer;
+}
+
+.hearts{
+font-size:24px;
+margin-bottom:10px;
+}
+
+.popup{
+position:fixed;
+top:50%;
+left:50%;
+transform:translate(-50%,-50%);
+background:#fff;
+color:#7a55c1;
+padding:25px 40px;
+border-radius:20px;
+font-size:22px;
+font-weight:bold;
+box-shadow:0 10px 30px rgba(0,0,0,0.3);
+display:none;
+z-index:999;
+}
+</style>
+</head>
+
+<body>
+
+<div class="popup" id="popup"></div>
+
+<div class="container">
+
+<!-- LOGIN -->
+<div id="login">
+<h1>Math.Id 🧮</h1>
+<p>Masukkan nama kamu</p>
+<input id="playerNameInput" placeholder="Nama">
+<br>
+<button onclick="login()">Mulai</button>
+</div>
+
+<!-- MENU -->
+<div id="menu" class="hidden">
+<h1>Halo, <span id="playerName"></span> 👋</h1>
+<button onclick="startLevel(1)">Level 1</button><br>
+
+<button id="btn2" onclick="startLevel(2)" disabled>
+Level 2 🔒
+</button><br>
+
+<button id="btn3" onclick="startLevel(3)" disabled>
+Level 3 🔒
+</button><br>
+
+<button id="btn4" onclick="startLevel(4)" disabled>
+Level 4 🔒
+</button>
+
+</div>
+
+<!-- GAME -->
+<div id="game" class="hidden">
+<div class="story" id="story"></div>
+<div class="hearts" id="hearts"></div>
+<div id="levelInfo"></div>
+<div class="equation" id="equation"></div>
+<div class="options" id="options"></div>
+</div>
+
+<!-- FINISH -->
+<div id="finish" class="hidden">
+<h1>🎉 LEVEL SELESAI!</h1>
+<p>Kamu hebat! Lanjut ke level berikutnya!</p>
+<button onclick="backMenu()">Kembali ke Menu</button>
+</div>
+
+</div>
+
+<!-- AUDIO -->
+<audio id="bgm" loop src="https://cdn.pixabay.com/download/audio/2025/05/22/audio_7e6322ff73.mp3?filename=game-intro-345507.mp3"></audio>
+<audio id="correctSound" src="https://cdn.pixabay.com/download/audio/2026/01/24/audio_d050f34e8a.mp3?filename=correct-472358.mp3"></audio>
+<audio id="wrongSound" src="https://cdn.pixabay.com/download/audio/2022/03/10/audio_8b0fae46ef.mp3?filename=wrong-47985.mp3"></audio>
+
+<script>
+
+let level=1;
+let index=0;
+let lives=3;
+
+const popup=document.getElementById("popup");
+const bgm=document.getElementById("bgm");
+const correctSound=document.getElementById("correctSound");
+const wrongSound=document.getElementById("wrongSound");
+
+function showPopup(text){
+popup.textContent=text;
+popup.style.display="block";
+setTimeout(()=>popup.style.display="none",1200);
+}
+function hidePopup(){
+    popup.style.display="none";
+}
+
+
+/* ================= DATA SOAL (TIDAK DIUBAH) ================= */
+const data={
+1:[
+{eq:[5,"+",5,"=","?"],ans:"10",opt:["10","8","12"]},
+{eq:[6,"+","?","=",8],ans:"2",opt:["1","2","3"]},
+{eq:[7,"-",6,"=","?"],ans:"1",opt:["0","1","2"]},
+{eq:[5,"-",3,"=","?"],ans:"2",opt:["1","2","3"]},
+{eq:[5,"+","?","=",7],ans:"2",opt:["1","3","2"]},
+{eq:[9,"-",4,"=","?"],ans:"5",opt:["5","6","6"]},
+{eq:[3,"+",6,"=","?"],ans:"9",opt:["9","7","8"]},
+{eq:[10,"-",2,"=","?"],ans:"8",opt:["6","8","9"]},
+{eq:[4,"+",4,"=","?"],ans:"8",opt:["6","7","8"]},
+{eq:[8,"-",5,"=","?"],ans:"3",opt:["2","3","4"]}
+],
+2:[
+{eq:[3,"×",2,"=","?"],ans:"6",opt:["6","4","8"]},
+{eq:[4,"×",8,"=","?"],ans:"32",opt:["24","32","36"]},
+{eq:[8,"×","?","=",24],ans:"3",opt:["2","3","4"]},
+{eq:[27,"÷",3,"=","?"],ans:"9",opt:["6","8","9"]},
+{eq:[28,"÷","?","=",14],ans:"2",opt:["7","4","2"]},
+{eq:[6,"×",5,"=","?"],ans:"30",opt:["30","35","20"]},
+{eq:[20,"÷",4,"=","?"],ans:"5",opt:["5","4","6"]},
+{eq:[9,"×",3,"=","?"],ans:"27",opt:["27","21","24"]},
+{eq:[16,"÷",2,"=","?"],ans:"8",opt:["6","8","10"]},
+{eq:[7,"×",4,"=","?"],ans:"28",opt:["28","24","32"]}
+],
+3:[
+{eq:[3,"×",6,"+",5,"=","?"],ans:"23",opt:["18","23","26"]},
+{eq:[4,"+",3,"×",5,"=","?"],ans:"19",opt:["17","19","12"]},
+{eq:[6,"÷",2,"-",2,"=","?"],ans:"1",opt:["0","1","2"]},
+{eq:[8,"+",10,"÷",5,"=","?"],ans:"10",opt:["8","9","10"]},
+{eq:[6,"×",2,"÷",4,"=","?"],ans:"3",opt:["2","3","4"]},
+{eq:[9,"+",3,"×",2,"=","?"],ans:"15",opt:["15","12","18"]},
+{eq:[20,"÷",5,"+",4,"=","?"],ans:"8",opt:["6","7","8"]},
+{eq:[7,"×",2,"-",5,"=","?"],ans:"9",opt:["7","9","11"]},
+{eq:[18,"÷",3,"+",2,"=","?"],ans:"8",opt:["6","9","8"]},
+{eq:[5,"×",3,"-",4,"=","?"],ans:"11",opt:["11","10","12"]}
+],
+4:[
+{story:"Sebuah kantin memiliki 6 kotak susu. Setiap kotak berisi 12 susu. Sebanyak 18 susu terjual. Berapa sisa susu?",eq:["?"],ans:"54",opt:["48","54","60"]},
+{story:"Rina memiliki 240 stiker. Dibagi rata kepada 6 teman lalu membeli lagi 45 stiker. Berapa stiker Rina sekarang?",eq:["?"],ans:"85",opt:["85","80","90"]},
+{story:"Ani memiliki 10 kantong apel. Setiap kantong berisi 5 apel. Ani memakan 12 apel. Berapa sisa apel?",eq:["?"],ans:"38",opt:["38","28","40"]},
+{story:"Pak Budi memanen 100 mangga. Terjual 45 mangga. Berapa sisa mangga?",eq:["?"],ans:"55",opt:["55","45","65"]},
+{story:"Di perpustakaan ada 8 rak buku. Tiap rak berisi 7 buku. 10 buku dipinjam. Berapa sisa buku?",eq:["?"],ans:"46",opt:["42","46","40"]},
+{story:"Ibu membeli 9 kantong jeruk. Tiap kantong 8 jeruk. 10 dimakan. Berapa sisa?",eq:["?"],ans:"62",opt:["60","62","64"]},
+{story:"Ada 50 permen. 15 dimakan dan ditambah 20 lagi. Berapa sekarang?",eq:["?"],ans:"55",opt:["45","65","55"]},
+{story:"Toko memiliki 120 pensil. Terjual 35. Berapa sisa?",eq:["?"],ans:"85",opt:["85","95","90"]},
+{story:"Andi punya 30 kelereng lalu membeli 25 lagi. Berapa jumlahnya?",eq:["?"],ans:"55",opt:["55","45","65"]},
+{story:"Ada 72 buku dibagi ke 8 rak sama banyak. Berapa tiap rak?",eq:["?"],ans:"9",opt:["8","7","9"]}
+]
+};
+/* =========================================================== */
+
+function login(){
+const name=document.getElementById("playerNameInput").value;
+if(!name)return;
+document.getElementById("playerName").textContent=name;
+document.getElementById("login").classList.add("hidden");
+document.getElementById("menu").classList.remove("hidden");
+}
+
+function startLevel(l){
+hidePopup();
+level=l;
+index=0;
+lives=3;
+updateHearts();
+
+bgm.volume=0.3;
+bgm.play().catch(()=>{});
+
+document.getElementById("menu").classList.add("hidden");
+document.getElementById("game").classList.remove("hidden");
+loadQuestion();
+}
+
+function updateHearts(){
+document.getElementById("hearts").textContent="❤️".repeat(lives);
+}
+
+function loadQuestion(){
+const q=data[level][index];
+document.getElementById("story").textContent=q.story||"";
+document.getElementById("levelInfo").textContent=`Level ${level} | Soal ${index+1}/10`;
+
+const eq=document.getElementById("equation");
+eq.innerHTML="";
+q.eq.forEach(p=>{
+if(p=="?"){
+const d=document.createElement("div");
+d.className="drop";
+eq.appendChild(d);
+}else{
+const s=document.createElement("span");
+s.textContent=p;
+eq.appendChild(s);
+}
+});
+
+const opt=document.getElementById("options");
+opt.innerHTML="";
+q.opt.forEach(o=>{
+const b=document.createElement("div");
+b.className="option";
+b.textContent=o;
+b.onclick=()=>check(o);
+opt.appendChild(b);
+});
+}
+
+function check(val){
+const q=data[level][index];
+const drop=document.querySelector(".drop");
+
+if(val===q.ans){
+
+correctSound.currentTime=0;
+correctSound.play();
+
+if(drop){
+drop.textContent=val;
+drop.style.background="#4caf50";
+drop.style.color="#fff";
+}
+
+ document.getElementById("levelInfo").textContent =
+    `✅ BENAR!`;
+
+    setTimeout(next,800);
+
+}else{
+
+wrongSound.currentTime=0;
+wrongSound.play();
+
+ lives--;
+    updateHearts();
+
+    document.getElementById("levelInfo").textContent =
+    `❌ SALAH!`;
+
+    if(lives<=0){
+
+    popup.style.background="#ff4d4d";
+    popup.style.color="#fff";
+    showPopup("💔 NYAWA HABIS!");
+
+    setTimeout(()=>{
+        level = 1;
+        backMenu();
+    },1200);
+}
+}
+}
+
+function next(){
+index++;
+if(index>=10){
+finish();
+}else{
+loadQuestion();
+}
+}
+
+function unlockLevel(lv){
+    const btn = document.getElementById("btn"+lv);
+    if(btn){
+        btn.disabled = false;
+        btn.textContent = "Level " + lv;
+    }
+}
+
+
+function finish(){
+document.getElementById("game").classList.add("hidden");
+document.getElementById("finish").classList.remove("hidden");
+if(level<4){
+unlockLevel(level+1);
+}
+
+}
+
+function backMenu(){
+hidePopup(); // <-- ini yang penting
+document.getElementById("game").classList.add("hidden");
+document.getElementById("finish").classList.add("hidden");
+document.getElementById("menu").classList.remove("hidden");
+}
+
+
+</script>
+</body>
+</html>
